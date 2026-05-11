@@ -188,7 +188,7 @@ func (p *TimeParser) Parse(layout string, loc *time.Location) (time.Time, error)
 		}
 	}
 	if loc == nil {
-		loc = time.Local
+		loc = time.UTC
 	}
 	args.Loc = loc
 	return args.time(), nil
