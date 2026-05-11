@@ -307,13 +307,13 @@ func TestFormat_NanoPadding(t *testing.T) {
 
 func TestTyMap(t *testing.T) {
 	expected := map[timeType]struct{}{
-		Year:         {},
-		Month:        {},
-		Day:          {},
-		Hour:         {},
-		Minute:       {},
-		Second:       {},
-		NanoOfSecond: {},
+		year:         {},
+		month:        {},
+		day:          {},
+		hour:         {},
+		minute:       {},
+		second:       {},
+		nanoOfSecond: {},
 	}
 	if len(tyMap) != len(expected) {
 		t.Errorf("TyMap length = %d, want %d", len(tyMap), len(expected))

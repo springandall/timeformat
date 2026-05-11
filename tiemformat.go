@@ -33,24 +33,24 @@ func Parse(value, pattern string, loc *time.Location) (time.Time, error) {
 type timeType rune
 
 const (
-	Literal      timeType = 0
-	Year         timeType = 'y'
-	Month        timeType = 'M'
-	Day          timeType = 'd'
-	Hour         timeType = 'H'
-	Minute       timeType = 'm'
-	Second       timeType = 's'
-	NanoOfSecond timeType = 'S'
+	literal      timeType = 0
+	year         timeType = 'y'
+	month        timeType = 'M'
+	day          timeType = 'd'
+	hour         timeType = 'H'
+	minute       timeType = 'm'
+	second       timeType = 's'
+	nanoOfSecond timeType = 'S'
 )
 
 var tyMap = map[timeType]struct{}{
-	Year:         {},
-	Month:        {},
-	Day:          {},
-	Hour:         {},
-	Minute:       {},
-	Second:       {},
-	NanoOfSecond: {},
+	year:         {},
+	month:        {},
+	day:          {},
+	hour:         {},
+	minute:       {},
+	second:       {},
+	nanoOfSecond: {},
 }
 
 type fieldKind int
@@ -239,14 +239,14 @@ type fieldRule struct {
 }
 
 var fieldRules = map[timeType]fieldRule{
-	Literal:      {1, -1, func(rl []rune, c, l, _ int) fieldInfo { return fieldInfo{kind: kindLiteral, text: string(rl[c : c+l])} }, ""},
-	Year:         {4, 4, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindYear, cursor: bc, length: l} }, "year out of range"},
-	Month:        {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindMonth, cursor: bc, length: l} }, "month out of range"},
-	Day:          {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindDay, cursor: bc, length: l} }, "day out of range"},
-	Hour:         {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindHour, cursor: bc, length: l} }, "hour out of range"},
-	Minute:       {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindMinute, cursor: bc, length: l} }, "minute out of range"},
-	Second:       {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindSecond, cursor: bc, length: l} }, "second out of range"},
-	NanoOfSecond: {2, 9, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindNano, cursor: bc, length: l} }, "nano out of range"},
+	literal:      {1, -1, func(rl []rune, c, l, _ int) fieldInfo { return fieldInfo{kind: kindLiteral, text: string(rl[c : c+l])} }, ""},
+	year:         {4, 4, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindYear, cursor: bc, length: l} }, "year out of range"},
+	month:        {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindMonth, cursor: bc, length: l} }, "month out of range"},
+	day:          {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindDay, cursor: bc, length: l} }, "day out of range"},
+	hour:         {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindHour, cursor: bc, length: l} }, "hour out of range"},
+	minute:       {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindMinute, cursor: bc, length: l} }, "minute out of range"},
+	second:       {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindSecond, cursor: bc, length: l} }, "second out of range"},
+	nanoOfSecond: {2, 9, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindNano, cursor: bc, length: l} }, "nano out of range"},
 }
 
 func countToken(layout []rune, start int, c rune) int {
@@ -284,7 +284,7 @@ func formatter(layoutS string) ([]fieldInfo, error) {
 			length = countToken(layout, i, c)
 		} else {
 			length = countLiteral(layout, i)
-			ty = Literal
+			ty = literal
 		}
 
 		rule := fieldRules[ty]
