@@ -306,7 +306,7 @@ func TestFormat_NanoPadding(t *testing.T) {
 }
 
 func TestTyMap(t *testing.T) {
-	expected := map[TimeType]struct{}{
+	expected := map[timeType]struct{}{
 		Year:         {},
 		Month:        {},
 		Day:          {},
@@ -315,11 +315,11 @@ func TestTyMap(t *testing.T) {
 		Second:       {},
 		NanoOfSecond: {},
 	}
-	if len(TyMap) != len(expected) {
-		t.Errorf("TyMap length = %d, want %d", len(TyMap), len(expected))
+	if len(tyMap) != len(expected) {
+		t.Errorf("TyMap length = %d, want %d", len(tyMap), len(expected))
 	}
 	for k, v := range expected {
-		if _, ok := TyMap[k]; !ok {
+		if _, ok := tyMap[k]; !ok {
 			t.Errorf("TyMap missing key %c", k)
 		}
 		_ = v

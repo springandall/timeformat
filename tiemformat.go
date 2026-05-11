@@ -30,20 +30,20 @@ func Parse(value, pattern string, loc *time.Location) (time.Time, error) {
 	return p.Parse(value, loc)
 }
 
-type TimeType rune
+type timeType rune
 
 const (
-	Literal      TimeType = 0
-	Year         TimeType = 'y'
-	Month        TimeType = 'M'
-	Day          TimeType = 'd'
-	Hour         TimeType = 'H'
-	Minute       TimeType = 'm'
-	Second       TimeType = 's'
-	NanoOfSecond TimeType = 'S'
+	Literal      timeType = 0
+	Year         timeType = 'y'
+	Month        timeType = 'M'
+	Day          timeType = 'd'
+	Hour         timeType = 'H'
+	Minute       timeType = 'm'
+	Second       timeType = 's'
+	NanoOfSecond timeType = 'S'
 )
 
-var TyMap = map[TimeType]struct{}{
+var tyMap = map[timeType]struct{}{
 	Year:         {},
 	Month:        {},
 	Day:          {},
@@ -73,7 +73,7 @@ type fieldInfo struct {
 	text   string
 }
 
-type DateArgs struct {
+type dateArgs struct {
 	Year  int
 	Month time.Month
 	Day   int
@@ -84,7 +84,7 @@ type DateArgs struct {
 	Loc   *time.Location
 }
 
-func (d *DateArgs) time() time.Time {
+func (d *dateArgs) time() time.Time {
 	return time.Date(d.Year, d.Month, d.Day, d.Hour, d.Min, d.Sec, d.Nsec, d.Loc)
 }
 
@@ -118,7 +118,7 @@ func (p *TimeParser) Format(t time.Time) string {
 }
 
 func (p *TimeParser) Parse(layout string, loc *time.Location) (time.Time, error) {
-	var args DateArgs
+	var args dateArgs
 	for _, f := range p.fields {
 		switch f.kind {
 		case kindLiteral:
@@ -238,7 +238,7 @@ type fieldRule struct {
 	errMsg   string
 }
 
-var fieldRules = map[TimeType]fieldRule{
+var fieldRules = map[timeType]fieldRule{
 	Literal:      {1, -1, func(rl []rune, c, l, _ int) fieldInfo { return fieldInfo{kind: kindLiteral, text: string(rl[c : c+l])} }, ""},
 	Year:         {4, 4, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindYear, cursor: bc, length: l} }, "year out of range"},
 	Month:        {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindMonth, cursor: bc, length: l} }, "month out of range"},
@@ -263,7 +263,7 @@ func countToken(layout []rune, start int, c rune) int {
 func countLiteral(layout []rune, start int) int {
 	count := 0
 	for _, r := range layout[start:] {
-		if _, ok := TyMap[TimeType(r)]; ok {
+		if _, ok := tyMap[timeType(r)]; ok {
 			break
 		}
 		count++
@@ -277,10 +277,10 @@ func formatter(layoutS string) ([]fieldInfo, error) {
 	byteCursor := 0
 	for i := 0; i < len(layout); {
 		c := layout[i]
-		ty := TimeType(c)
+		ty := timeType(c)
 
 		var length int
-		if _, ok := TyMap[ty]; ok {
+		if _, ok := tyMap[ty]; ok {
 			length = countToken(layout, i, c)
 		} else {
 			length = countLiteral(layout, i)
