@@ -2,18 +2,16 @@ package timeformat
 
 import (
 	"errors"
-	"fmt"
-	"strconv"
-	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 func OfPattern(pattern string) (*TimeParser, error) {
-	formats, err := formatter(pattern)
+	fields, err := formatter(pattern)
 	if err != nil {
 		return nil, err
 	}
-	return &TimeParser{formats}, nil
+	return &TimeParser{fields}, nil
 }
 
 func Format(t time.Time, pattern string) (string, error) {
@@ -55,6 +53,26 @@ var TyMap = map[TimeType]struct{}{
 	NanoOfSecond: {},
 }
 
+type fieldKind int
+
+const (
+	kindLiteral fieldKind = iota
+	kindYear
+	kindMonth
+	kindDay
+	kindHour
+	kindMinute
+	kindSecond
+	kindNano
+)
+
+type fieldInfo struct {
+	kind   fieldKind
+	cursor int
+	length int
+	text   string
+}
+
 type DateArgs struct {
 	Year  int
 	Month time.Month
@@ -63,238 +81,110 @@ type DateArgs struct {
 	Min   int
 	Sec   int
 	Nsec  int
-
-	Loc *time.Location
+	Loc   *time.Location
 }
 
 func (d *DateArgs) time() time.Time {
-	return time.Date(
-		d.Year,
-		d.Month,
-		d.Day,
-		d.Hour,
-		d.Min,
-		d.Sec,
-		d.Nsec,
-		d.Loc,
-	)
-}
-
-type TimeFormat interface {
-	Format(time time.Time) string
-	Parse(layout []rune, args *DateArgs) error
-}
-
-type YearFormat struct {
-	cursor int
-	length int
-}
-
-func (y *YearFormat) Format(time time.Time) string {
-	return fmt.Sprintf("%04d", time.Year())
-}
-
-func (y *YearFormat) Parse(layout []rune, args *DateArgs) error {
-	if len(layout[y.cursor:]) < y.length {
-		return errors.New("length out of range")
-	}
-	year := layout[y.cursor : y.cursor+y.length]
-	yearNum, err := strconv.Atoi(string(year))
-	if err != nil {
-		return err
-	}
-	args.Year = yearNum
-	return nil
-}
-
-type MonthFormat struct {
-	cursor int
-	length int
-}
-
-func (m *MonthFormat) Format(time time.Time) string {
-	return fmt.Sprintf("%02d", time.Month())
-}
-
-func (m *MonthFormat) Parse(layout []rune, args *DateArgs) error {
-	if len(layout[m.cursor:]) < m.length {
-		return errors.New("length out of range")
-	}
-	month := layout[m.cursor : m.cursor+m.length]
-	monthNum, err := strconv.Atoi(string(month))
-	if err != nil {
-		return err
-	}
-	if monthNum <= 0 || monthNum > 12 {
-		return errors.New("month out of range")
-	}
-	args.Month = time.Month(monthNum)
-	return nil
-}
-
-type DayFormat struct {
-	cursor int
-	length int
-}
-
-func (d *DayFormat) Format(time time.Time) string {
-	return fmt.Sprintf("%02d", time.Day())
-
-}
-
-func (d *DayFormat) Parse(layout []rune, args *DateArgs) error {
-	if len(layout[d.cursor:]) < d.length {
-		return errors.New("length out of range")
-	}
-	day := layout[d.cursor : d.cursor+d.length]
-	dayNum, err := strconv.Atoi(string(day))
-	if err != nil {
-		return err
-	}
-	if dayNum <= 0 || dayNum > 31 {
-		return errors.New("day out of range")
-	}
-	args.Day = dayNum
-	return nil
-}
-
-type HourFormat struct {
-	cursor int
-	length int
-}
-
-func (h *HourFormat) Format(time time.Time) string {
-	return fmt.Sprintf("%02d", time.Hour())
-
-}
-
-func (h *HourFormat) Parse(layout []rune, args *DateArgs) error {
-	if len(layout[h.cursor:]) < h.length {
-		return errors.New("length out of range")
-	}
-	hour := layout[h.cursor : h.cursor+h.length]
-	hourNum, err := strconv.Atoi(string(hour))
-	if err != nil {
-		return err
-	}
-	if hourNum < 0 || hourNum > 23 {
-		return errors.New("hour out of range")
-	}
-	args.Hour = hourNum
-	return nil
-}
-
-type MinuteFormat struct {
-	cursor int
-	length int
-}
-
-func (m *MinuteFormat) Format(time time.Time) string {
-	return fmt.Sprintf("%02d", time.Minute())
-
-}
-
-func (m *MinuteFormat) Parse(layout []rune, args *DateArgs) error {
-	if len(layout[m.cursor:]) < m.length {
-		return errors.New("length out of range")
-	}
-	minute := layout[m.cursor : m.cursor+m.length]
-	minuteNum, err := strconv.Atoi(string(minute))
-	if err != nil {
-		return err
-	}
-	if minuteNum < 0 || minuteNum > 59 {
-		return errors.New("minute out of range")
-	}
-	args.Min = minuteNum
-	return nil
-}
-
-type SecondFormat struct {
-	cursor int
-	length int
-}
-
-func (s *SecondFormat) Format(time time.Time) string {
-	return fmt.Sprintf("%02d", time.Second())
-
-}
-
-func (s *SecondFormat) Parse(layout []rune, args *DateArgs) error {
-	if len(layout[s.cursor:]) < s.length {
-		return errors.New("length out of range")
-	}
-	second := layout[s.cursor : s.cursor+s.length]
-	secondNum, err := strconv.Atoi(string(second))
-	if err != nil {
-		return err
-	}
-	if secondNum < 0 || secondNum > 59 {
-		return errors.New("second out of range")
-	}
-	args.Sec = secondNum
-	return nil
-}
-
-type NanoOfSecondFormat struct {
-	cursor int
-	length int
-}
-
-func (n *NanoOfSecondFormat) Format(time time.Time) string {
-	s := fmt.Sprintf("%09d", time.Nanosecond())
-	return s[:n.length]
-}
-
-func (n *NanoOfSecondFormat) Parse(layout []rune, args *DateArgs) error {
-	if len(layout[n.cursor:]) < n.length {
-		return errors.New("length out of range")
-	}
-	nano := layout[n.cursor : n.cursor+n.length]
-	nanoNum, err := strconv.Atoi(string(nano))
-	if err != nil {
-		return err
-	}
-	for i := n.length; i < 9; i++ {
-		nanoNum *= 10
-	}
-	if nanoNum < 0 || nanoNum > 999999999 {
-		return errors.New("nanoNum out of range")
-	}
-	args.Nsec = nanoNum
-	return nil
-}
-
-type LiteralFormat struct {
-	text []rune
-}
-
-func (l *LiteralFormat) Format(time time.Time) string {
-	return string(l.text)
-}
-
-func (l *LiteralFormat) Parse(_ []rune, _ *DateArgs) error {
-	return nil
+	return time.Date(d.Year, d.Month, d.Day, d.Hour, d.Min, d.Sec, d.Nsec, d.Loc)
 }
 
 type TimeParser struct {
-	formatter []TimeFormat
+	fields []fieldInfo
 }
 
-func (t *TimeParser) Format(time time.Time) string {
-	var builder strings.Builder
-	for _, f := range t.formatter {
-		builder.WriteString(f.Format(time))
+func (p *TimeParser) Format(t time.Time) string {
+	buf := make([]byte, 0, 64)
+	for _, f := range p.fields {
+		switch f.kind {
+		case kindLiteral:
+			buf = append(buf, f.text...)
+		case kindYear:
+			buf = append4Digits(buf, t.Year())
+		case kindMonth:
+			buf = append2Digits(buf, int(t.Month()))
+		case kindDay:
+			buf = append2Digits(buf, t.Day())
+		case kindHour:
+			buf = append2Digits(buf, t.Hour())
+		case kindMinute:
+			buf = append2Digits(buf, t.Minute())
+		case kindSecond:
+			buf = append2Digits(buf, t.Second())
+		case kindNano:
+			buf = appendNano(buf, t.Nanosecond(), f.length)
+		}
 	}
-	return builder.String()
+	return string(buf)
 }
-func (t *TimeParser) Parse(format string, loc *time.Location) (time.Time, error) {
+
+func (p *TimeParser) Parse(layout string, loc *time.Location) (time.Time, error) {
 	var args DateArgs
-	v := []rune(format)
-	for _, f := range t.formatter {
-		err := f.Parse(v, &args)
-		if err != nil {
-			return time.Time{}, err
+	for _, f := range p.fields {
+		switch f.kind {
+		case kindLiteral:
+		case kindYear:
+			v, err := atoiStr(layout, f.cursor, f.length)
+			if err != nil {
+				return time.Time{}, err
+			}
+			args.Year = v
+		case kindMonth:
+			v, err := atoiStr(layout, f.cursor, f.length)
+			if err != nil {
+				return time.Time{}, err
+			}
+			if v < 1 || v > 12 {
+				return time.Time{}, errors.New("month out of range")
+			}
+			args.Month = time.Month(v)
+		case kindDay:
+			v, err := atoiStr(layout, f.cursor, f.length)
+			if err != nil {
+				return time.Time{}, err
+			}
+			if v < 1 || v > 31 {
+				return time.Time{}, errors.New("day out of range")
+			}
+			args.Day = v
+		case kindHour:
+			v, err := atoiStr(layout, f.cursor, f.length)
+			if err != nil {
+				return time.Time{}, err
+			}
+			if v < 0 || v > 23 {
+				return time.Time{}, errors.New("hour out of range")
+			}
+			args.Hour = v
+		case kindMinute:
+			v, err := atoiStr(layout, f.cursor, f.length)
+			if err != nil {
+				return time.Time{}, err
+			}
+			if v < 0 || v > 59 {
+				return time.Time{}, errors.New("minute out of range")
+			}
+			args.Min = v
+		case kindSecond:
+			v, err := atoiStr(layout, f.cursor, f.length)
+			if err != nil {
+				return time.Time{}, err
+			}
+			if v < 0 || v > 59 {
+				return time.Time{}, errors.New("second out of range")
+			}
+			args.Sec = v
+		case kindNano:
+			v, err := atoiStr(layout, f.cursor, f.length)
+			if err != nil {
+				return time.Time{}, err
+			}
+			for i := f.length; i < 9; i++ {
+				v *= 10
+			}
+			if v < 0 || v > 999999999 {
+				return time.Time{}, errors.New("nano out of range")
+			}
+			args.Nsec = v
 		}
 	}
 	if loc == nil {
@@ -304,22 +194,59 @@ func (t *TimeParser) Parse(format string, loc *time.Location) (time.Time, error)
 	return args.time(), nil
 }
 
-type typeRule struct {
-	minLen    int
-	maxLen    int
-	newFormat func(rlayout []rune, cursor, length int) TimeFormat
-	errMsg    string
+func atoiStr(s string, start, length int) (int, error) {
+	if len(s) < start+length {
+		return 0, errors.New("input too short")
+	}
+	n := 0
+	for i := 0; i < length; i++ {
+		c := s[start+i]
+		if c < '0' || c > '9' {
+			return 0, errors.New("not a number")
+		}
+		n = n*10 + int(c-'0')
+	}
+	return n, nil
 }
 
-var typeRules = map[TimeType]typeRule{
-	Literal:      {1, -1, func(rl []rune, c, l int) TimeFormat { return &LiteralFormat{text: rl[c : c+l]} }, ""},
-	Year:         {4, 4, func(_ []rune, c, l int) TimeFormat { return &YearFormat{c, l} }, "year out of range"},
-	Month:        {2, 2, func(_ []rune, c, l int) TimeFormat { return &MonthFormat{c, l} }, "month out of range"},
-	Day:          {2, 2, func(_ []rune, c, l int) TimeFormat { return &DayFormat{c, l} }, "day out of range"},
-	Hour:         {2, 2, func(_ []rune, c, l int) TimeFormat { return &HourFormat{c, l} }, "hour out of range"},
-	Minute:       {2, 2, func(_ []rune, c, l int) TimeFormat { return &MinuteFormat{c, l} }, "minute out of range"},
-	Second:       {2, 2, func(_ []rune, c, l int) TimeFormat { return &SecondFormat{c, l} }, "second out of range"},
-	NanoOfSecond: {2, 9, func(_ []rune, c, l int) TimeFormat { return &NanoOfSecondFormat{c, l} }, "nano out of range"},
+func append2Digits(buf []byte, v int) []byte {
+	return append(buf, byte('0'+v/10), byte('0'+v%10))
+}
+
+func append4Digits(buf []byte, v int) []byte {
+	return append(buf,
+		byte('0'+v/1000),
+		byte('0'+(v/100)%10),
+		byte('0'+(v/10)%10),
+		byte('0'+v%10),
+	)
+}
+
+func appendNano(buf []byte, v, digits int) []byte {
+	var tmp [9]byte
+	for i := 8; i >= 0; i-- {
+		tmp[i] = byte('0' + v%10)
+		v /= 10
+	}
+	return append(buf, tmp[:digits]...)
+}
+
+type fieldRule struct {
+	minLen   int
+	maxLen   int
+	newField func(rlayout []rune, cursor, length, byteCursor int) fieldInfo
+	errMsg   string
+}
+
+var fieldRules = map[TimeType]fieldRule{
+	Literal:      {1, -1, func(rl []rune, c, l, _ int) fieldInfo { return fieldInfo{kind: kindLiteral, text: string(rl[c : c+l])} }, ""},
+	Year:         {4, 4, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindYear, cursor: bc, length: l} }, "year out of range"},
+	Month:        {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindMonth, cursor: bc, length: l} }, "month out of range"},
+	Day:          {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindDay, cursor: bc, length: l} }, "day out of range"},
+	Hour:         {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindHour, cursor: bc, length: l} }, "hour out of range"},
+	Minute:       {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindMinute, cursor: bc, length: l} }, "minute out of range"},
+	Second:       {2, 2, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindSecond, cursor: bc, length: l} }, "second out of range"},
+	NanoOfSecond: {2, 9, func(_ []rune, _ int, l, bc int) fieldInfo { return fieldInfo{kind: kindNano, cursor: bc, length: l} }, "nano out of range"},
 }
 
 func countToken(layout []rune, start int, c rune) int {
@@ -344,9 +271,10 @@ func countLiteral(layout []rune, start int) int {
 	return count
 }
 
-func formatter(layoutS string) ([]TimeFormat, error) {
+func formatter(layoutS string) ([]fieldInfo, error) {
 	layout := []rune(layoutS)
-	var formats []TimeFormat
+	var fields []fieldInfo
+	byteCursor := 0
 	for i := 0; i < len(layout); {
 		c := layout[i]
 		ty := TimeType(c)
@@ -359,13 +287,17 @@ func formatter(layoutS string) ([]TimeFormat, error) {
 			ty = Literal
 		}
 
-		rule := typeRules[ty]
+		rule := fieldRules[ty]
 		if length < rule.minLen || (rule.maxLen != -1 && length > rule.maxLen) {
 			return nil, errors.New(rule.errMsg)
 		}
-		formats = append(formats, rule.newFormat(layout, i, length))
+		fields = append(fields, rule.newField(layout, i, length, byteCursor))
+
+		for j := i; j < i+length; j++ {
+			byteCursor += utf8.RuneLen(layout[j])
+		}
 
 		i += length
 	}
-	return formats, nil
+	return fields, nil
 }

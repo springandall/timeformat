@@ -369,3 +369,83 @@ func TestParse_NilLocation(t *testing.T) {
 		t.Error("expected non-zero time")
 	}
 }
+
+var benchSink time.Time
+
+func BenchmarkParse_Custom(b *testing.B) {
+	p, err := OfPattern("yyyy-MM-dd HH:mm:ss")
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		benchSink, _ = p.Parse("2024-06-15 14:30:45", time.UTC)
+	}
+}
+
+func BenchmarkParse_Stdlib(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		benchSink, _ = time.Parse("2006-01-02 15:04:05", "2024-06-15 14:30:45")
+	}
+}
+
+func BenchmarkParse_CustomCached(b *testing.B) {
+	p, err := OfPattern("yyyy-MM-dd HH:mm:ss")
+	if err != nil {
+		b.Fatal(err)
+	}
+	loc := time.UTC
+	val := "2024-06-15 14:30:45"
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		benchSink, _ = p.Parse(val, loc)
+	}
+}
+
+func BenchmarkParse_StdlibCached(b *testing.B) {
+	layout := "2006-01-02 15:04:05"
+	val := "2024-06-15 14:30:45"
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		benchSink, _ = time.Parse(layout, val)
+	}
+}
+
+func BenchmarkParse_CustomWithNano(b *testing.B) {
+	p, err := OfPattern("yyyy-MM-dd HH:mm:ss.SSSSSSSSS")
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		benchSink, _ = p.Parse("2024-06-15 14:30:45.123456789", time.UTC)
+	}
+}
+
+func BenchmarkParse_StdlibWithNano(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		benchSink, _ = time.Parse("2006-01-02 15:04:05.000000000", "2024-06-15 14:30:45.123456789")
+	}
+}
+
+func BenchmarkFormat_Custom(b *testing.B) {
+	p, err := OfPattern("yyyy-MM-dd HH:mm:ss")
+	if err != nil {
+		b.Fatal(err)
+	}
+	tm := time.Date(2024, 6, 15, 14, 30, 45, 0, time.UTC)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		benchSink2 = p.Format(tm)
+	}
+}
+
+var benchSink2 string
+
+func BenchmarkFormat_Stdlib(b *testing.B) {
+	tm := time.Date(2024, 6, 15, 14, 30, 45, 0, time.UTC)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		benchSink2 = tm.Format("2006-01-02 15:04:05")
+	}
+}
