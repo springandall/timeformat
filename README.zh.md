@@ -15,20 +15,20 @@ import (
 
 func main() {
     // 格式化
-    s, _ := timeformat.Format(time.Now(), "yyyy-MM-dd HH:mm:ss")
+    s, _ := timeformat.Format("yyyy-MM-dd HH:mm:ss", time.Now())
     fmt.Println(s) // 2024-06-15 14:30:45
 
     // 解析
-    t, _ := timeformat.Parse("2024-06-15 14:30:45", "yyyy-MM-dd HH:mm:ss", time.UTC)
+    t, _ := timeformat.Parse("yyyy-MM-dd HH:mm:ss", "2024-06-15 14:30:45", time.UTC)
     fmt.Println(t)
 
     // 带纳秒
-    s, _ = timeformat.Format(time.Now(), "yyyy-MM-dd HH:mm:ss.SSS")
+    s, _ = timeformat.Format("yyyy-MM-dd HH:mm:ss.SSS", time.Now())
     fmt.Println(s) // 2024-06-15 14:30:45.123
-	
-	// 带纳秒
-	s, _ = timeformat.Format(time.Now(), "yyyy-MM-dd HH:mm:ss SSS")
-	fmt.Println(s) // 2024-06-15 14:30:45 123
+
+    // 带纳秒
+    s, _ = timeformat.Format("yyyy-MM-dd HH:mm:ss SSS", time.Now())
+    fmt.Println(s) // 2024-06-15 14:30:45 123
 }
 ```
 
@@ -50,8 +50,5 @@ func main() {
 
 ## API
 
-- `OfPattern(pattern)` — 返回 `*TimeParser`
-- `Format(t time.Time, pattern)` — 格式化时间为字符串
-- `Parse(value, pattern, loc)` — 解析字符串为 `time.Time`
-- `TimeParser.Format(t)` — 使用缓存好的解析器格式化
-- `TimeParser.Parse(value, loc)` — 使用缓存好的解析器解析
+- `Format(pattern, t)` — 格式化时间为字符串
+- `Parse(pattern, value, loc)` — 解析字符串为 `time.Time`

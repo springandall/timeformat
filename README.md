@@ -15,20 +15,20 @@ import (
 
 func main() {
     // Format
-    s, _ := timeformat.Format(time.Now(), "yyyy-MM-dd HH:mm:ss")
+    s, _ := timeformat.Format("yyyy-MM-dd HH:mm:ss", time.Now())
     fmt.Println(s) // 2024-06-15 14:30:45
 
     // Parse
-    t, _ := timeformat.Parse("2024-06-15 14:30:45", "yyyy-MM-dd HH:mm:ss", time.UTC)
+    t, _ := timeformat.Parse("yyyy-MM-dd HH:mm:ss", "2024-06-15 14:30:45", time.UTC)
     fmt.Println(t)
 
     // With nanosecond
-    s, _ = timeformat.Format(time.Now(), "yyyy-MM-dd HH:mm:ss.SSS")
+    s, _ = timeformat.Format("yyyy-MM-dd HH:mm:ss.SSS", time.Now())
     fmt.Println(s) // 2024-06-15 14:30:45.123
 
-	// With nanosecond
-	s, _ = timeformat.Format(time.Now(), "yyyy-MM-dd HH:mm:ss SSS")
-	fmt.Println(s) // 2024-06-15 14:30:45 123
+    // With nanosecond
+    s, _ = timeformat.Format("yyyy-MM-dd HH:mm:ss SSS", time.Now())
+    fmt.Println(s) // 2024-06-15 14:30:45 123
 }
 ```
 
@@ -50,8 +50,5 @@ Other characters are treated as literals.
 
 ## API
 
-- `OfPattern(pattern)` —  `*TimeParser`
-- `Format(t time.Time, pattern)` — format time as string
-- `Parse(value, pattern, loc)` — parse string into `time.Time`
-- `TimeParser.Format(t)` — format with cached parser
-- `TimeParser.Parse(value, loc)` — parse with cached parser
+- `Format(pattern, t)` — format time as string
+- `Parse(pattern, value, loc)` — parse string into `time.Time`
